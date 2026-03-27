@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#f7f7f5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Kurse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: #e8e8e4;
+    --text: #1a1a18;
+    --muted: #9a9a94;
+    --faint: #f0f0ec;
+    --green: #1a7a4a;
+    --green-bg: #eaf5ef;
+    --red: #b83232;
+    --red-bg: #fdf0f0;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-size: 13px;
+  }
+
+  header {
+    padding: 48px 24px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: var(--serif);
+    font-size: 32px;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .header-meta {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: breathe 2.5s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .clock { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  main {
+    padding: 0 24px;
+    padding-bottom: 100px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .stocks-list { margin-top: 0; }
+
+  .stock-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    animation: fadeIn 0.4s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stock-symbol {
+    font-family: var(--serif);
+    font-size: 22px;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+    margin-bottom: 3px;
+  }
+
+  .stock-name {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 10px;
+  }
+
+  .stock-meta-row { display: flex; gap: 14px; }
+
+  .meta-pair { display: flex; flex-direction: column; gap: 1px; }
+  .meta-label { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+  .meta-val { font-size: 12px; font-weight: 300; }
+
+  .stock-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .stock-price {
+    font-family: var(--serif);
+    font-size: 26px;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .stock-price.up { color: var(--green); }
+  .stock-price.dn { color: var(--red); }
+
+  .stock-change {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  .stock-change.up { color: var(--green); background: var(--green-bg); }
+  .stock-change.dn { color: var(--red); background: var(--red-bg); }
+
+  .remove-btn {
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, color 0.2s;
+    border-radius: 50%;
+  }
+
+  .stock-row:hover .remove-btn,
+  .stock-row.show-remove .remove-btn { opacity: 1; }
+  .remove-btn:hover { color: var(--red); }
+
+  .shimmer {
+    display: inline-block;
+    background: linear-gradient(90deg, var(--border) 25%, var(--faint) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 3px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .empty-state {
+    padding: 80px 0 40px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    font-family: var(--serif);
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.3;
+  }
+
+  .empty-state p { font-size: 12px; line-height: 1.8; font-weight: 300; }
+
+  .last-updated {
+    padding: 16px 0 0;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .add-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 20px 24px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.06);
+  }
+
+  .add-panel.open { transform: translateY(0); }
+
+  .add-panel-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  .add-row { display: flex; gap: 8px; align-items: stretch; }
+
+  .add-input {
+    flex: 1;
+    border: 1px solid var(--border);
+    background: var(--faint);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 11px 14px;
+    border-radius: 6px;
+    outline: none;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .add-input:focus { border-color: var(--text); background: var(--surface); }
+  .add-input::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 300; }
+
+  .add-btn {
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    padding: 11px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .add-btn:active { opacity: 0.7; }
+
+  .error-msg { font-size: 11px; color: var(--red); min-height: 14px; margin-top: 6px; }
+
+  .suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+  .chip {
+    background: var(--faint);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    text-transform: uppercase;
+  }
+
+  .chip:active { border-color: var(--text); color: var(--text); }
+
+  .fab {
+    position: fixed;
+    bottom: 28px; right: 24px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    font-size: 24px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 150;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+    transition: transform 0.25s ease;
+  }
+
+  .fab:active { transform: scale(0.92); }
+  .fab.open { transform: rotate(45deg); }
+
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(247,247,245,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 190;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .overlay.open { opacity: 1; pointer-events: all; }
+
+  @keyframes flash-up {
+    0% { background: var(--green-bg); }
+    100% { background: transparent; }
+  }
+
+  @keyframes flash-dn {
+    0% { background: var(--red-bg); }
+    100% { background: transparent; }
+  }
+
+  .stock-row.flash-up { animation: flash-up 1s ease; }
+  .stock-row.flash-dn { animation: flash-dn 1s ease; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Kurse</div>
+  <div class="header-meta">
+    <div class="live-badge">
+      <div class="live-dot" id="liveDot"></div>
+      Live
+    </div>
+    <div class="clock" id="clock">—</div>
+  </div>
+</header>
+
+<main>
+  <div class="stocks-list" id="stocksList"></div>
+  <div class="last-updated" id="lastUpdated"></div>
+</main>
+
+<div class="overlay" id="overlay"></div>
+<button class="fab" id="fab">+</button>
+
+<div class="add-panel" id="addPanel">
+  <div class="add-panel-title">Aktie hinzufügen</div>
+  <div class="add-row">
+    <input class="add-input" id="symbolInput" type="text" maxlength="10"
+      placeholder="z.B. AAPL, SAP.DE, BTC-USD"
+      autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="add-btn" id="addBtn">Add</button>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="suggestions" id="suggestions"></div>
+</div>
+
+<script>
+const DEFAULTS = ['TSLA', 'ENR.DE'];
+const STORAGE_KEY = 'kurse_watchlist_v1';
+const REFRESH_MS = 15000;
+const SUGGEST_POOL = [
+  'AAPL','MSFT','GOOGL','AMZN','META','NVDA','NFLX','AMD',
+  'SAP.DE','SIE.DE','BMW.DE','VOW3.DE','ALV.DE','DBK.DE','MBG.DE',
+  'BTC-USD','ETH-USD','SOL-USD','COIN','UBER','SPOT'
+];
+
+let watchlist = [], stockData = {}, refreshTimer = null, panelOpen = false;
+
+function loadWatchlist() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) { const p = JSON.parse(s); if (Array.isArray(p) && p.length) return p; }
+  } catch(e) {}
+  return [...DEFAULTS];
+}
+
+function saveWatchlist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist)); } catch(e) {}
+}
+
+function tickClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('de-DE');
+}
+setInterval(tickClock, 1000); tickClock();
+
+async function fetchQuotes(symbols) {
+  if (!symbols.length) return {};
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(',')}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,regularMarketVolume,shortName,fullExchangeName,currency`;
+  let raw = null;
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    raw = await r.json();
+  } catch(e) {
+    try {
+      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) });
+      const j = await r.json(); raw = JSON.parse(j.contents);
+    } catch(e2) { return null; }
+  }
+  const out = {};
+  try {
+    for (const q of raw.quoteResponse?.result || []) {
+      out[q.symbol] = {
+        symbol: q.symbol, name: q.shortName || q.symbol,
+        price: q.regularMarketPrice, change: q.regularMarketChange,
+        pct: q.regularMarketChangePercent, high: q.regularMarketDayHigh,
+        low: q.regularMarketDayLow, vol: q.regularMarketVolume,
+        currency: q.currency || ''
+      };
+    }
+  } catch(e) {}
+  return out;
+}
+
+function fmt(n, d=2) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+function fmtVol(n) {
+  if (!n) return '—';
+  if (n >= 1e9) return (n/1e9).toFixed(1)+' Mrd';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+' Mio';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+' K';
+  return String(n);
+}
+
+function renderList() {
+  const list = document.getElementById('stocksList');
+  if (!watchlist.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">∅</div><p>Keine Aktien in der Watchlist.<br>Tippe auf <strong>+</strong> um eine hinzuzufügen.</p></div>`;
+    return;
+  }
+
+  watchlist.forEach((sym, i) => {
+    const d = stockData[sym];
+    const existing = document.getElementById(`row-${sym}`);
+    const isUp = d ? d.change >= 0 : null;
+    const sign = isUp ? '+' : '';
+    const arrow = isUp ? '↑' : '↓';
+
+    const inner = d ? `
+      <div class="stock-left">
+        <div class="stock-symbol">${d.symbol}</div>
+        <div class="stock-name">${d.name}</div>
+        <div class="stock-meta-row">
+          <div class="meta-pair"><span class="meta-label">Hoch</span><span class="meta-val">${fmt(d.high)}</span></div>
+          <div class="meta-pair"><span class="meta-label">Tief</span><span class="meta-val">${fmt(d.low)}</span></div>
+          <div class="meta-pair"><span class="meta-label">Volumen</span><span class="meta-val">${fmtVol(d.vol)}</span></div>
+        </div>
+      </div>
+      <div class="stock-right">
+        <div class="stock-price ${isUp?'up':'dn'}">${fmt(d.price)}</div>
+        <div class="stock-change ${isUp?'up':'dn'}">${arrow} ${sign}${fmt(d.pct)}%</div>
+      </div>
+      <button class="remove-btn" onclick="removeStock('${sym}')">×</button>
+    ` : `
+      <div class="stock-left">
+        <div class="stock-symbol">${sym}</div>
+        <div class="stock-name"><span class="shimmer" style="width:130px;height:11px"></span></div>
+      </div>
+      <div class="stock-right">
+        <div class="stock-price"><span class="shimmer" style="width:64px;height:22px"></span></div>
+      </div>
+      <button class="remove-btn" onclick="removeStock('${sym}')">×</button>
+    `;
+
+    if (existing) {
+      if (d) {
+        const old = existing.dataset.price;
+        if (old && old !== String(d.price)) {
+          existing.classList.remove('flash-up','flash-dn');
+          void existing.offsetWidth;
+          existing.classList.add(isUp ? 'flash-up' : 'flash-dn');
+        }
+        existing.dataset.price = d.price;
+      }
+      existing.innerHTML = inner;
+    } else {
+      const row = document.createElement('div');
+      row.className = 'stock-row';
+      row.id = `row-${sym}`;
+      row.style.animationDelay = `${i * 50}ms`;
+      if (d) row.dataset.price = d.price;
+      row.innerHTML = inner;
+      let pt;
+      row.addEventListener('touchstart', () => { pt = setTimeout(() => row.classList.toggle('show-remove'), 500); });
+      row.addEventListener('touchend', () => clearTimeout(pt));
+      list.appendChild(row);
+    }
+  });
+
+  list.querySelectorAll('.stock-row').forEach(row => {
+    if (!watchlist.includes(row.id.replace('row-',''))) row.remove();
+  });
+}
+
+async function refresh() {
+  if (!watchlist.length) return;
+  const dot = document.getElementById('liveDot');
+  dot.style.background = '#c8a020';
+  const data = await fetchQuotes(watchlist);
+  if (data) {
+    stockData = { ...stockData, ...data };
+    renderList();
+    document.getElementById('lastUpdated').textContent = `Zuletzt: ${new Date().toLocaleTimeString('de-DE')}`;
+  }
+  dot.style.background = data ? 'var(--green)' : 'var(--red)';
+}
+
+function startRefresh() {
+  clearInterval(refreshTimer);
+  refresh();
+  refreshTimer = setInterval(refresh, REFRESH_MS);
+}
+
+async function addStock(rawSym) {
+  const sym = rawSym.trim().toUpperCase();
+  if (!sym) return;
+  const err = document.getElementById('errorMsg');
+  if (watchlist.includes(sym)) { err.textContent = `${sym} bereits in der Liste`; return; }
+  err.style.color = 'var(--muted)'; err.textContent = 'Prüfe Symbol…';
+  const data = await fetchQuotes([sym]);
+  if (!data || !data[sym]) { err.style.color = 'var(--red)'; err.textContent = `Symbol „${sym}" nicht gefunden`; return; }
+  watchlist.push(sym);
+  stockData[sym] = data[sym];
+  saveWatchlist(); renderList(); renderSuggestions(); closePanel();
+  document.getElementById('symbolInput').value = '';
+  err.textContent = '';
+}
+
+function removeStock(sym) {
+  watchlist = watchlist.filter(s => s !== sym);
+  delete stockData[sym];
+  saveWatchlist();
+  const row = document.getElementById(`row-${sym}`);
+  if (row) {
+    row.style.transition = 'opacity 0.2s, transform 0.2s';
+    row.style.opacity = '0'; row.style.transform = 'translateX(12px)';
+    setTimeout(() => { row.remove(); if (!watchlist.length) renderList(); renderSuggestions(); }, 220);
+  }
+}
+
+function renderSuggestions() {
+  document.getElementById('suggestions').innerHTML =
+    SUGGEST_POOL.filter(s => !watchlist.includes(s)).slice(0,14)
+      .map(s => `<div class="chip" onclick="quickAdd('${s}')">${s}</div>`).join('');
+}
+
+function quickAdd(sym) {
+  document.getElementById('symbolInput').value = sym;
+  addStock(sym);
+}
+
+function openPanel() {
+  panelOpen = true;
+  document.getElementById('addPanel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('fab').classList.add('open');
+  document.getElementById('errorMsg').textContent = '';
+  renderSuggestions();
+  setTimeout(() => document.getElementById('symbolInput').focus(), 350);
+}
+
+function closePanel() {
+  panelOpen = false;
+  ['addPanel','overlay','fab'].forEach(id => document.getElementById(id).classList.remove('open'));
+}
+
+document.getElementById('fab').addEventListener('click', () => panelOpen ? closePanel() : openPanel());
+document.getElementById('overlay').addEventListener('click', closePanel);
+document.getElementById('addBtn').addEventListener('click', () => addStock(document.getElementById('symbolInput').value));
+document.getElementById('symbolInput').addEventListener('keydown', e => { if (e.key === 'Enter') addStock(e.target.value); });
+
+watchlist = loadWatchlist();
+renderList();
+startRefresh();
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) startRefresh(); else clearInterval(refreshTimer);
+});
+
+if ('serviceWorker' in navigator) {
+  const sw = `const C='kurse-v1';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['/']))));self.addEventListener('fetch',e=>{if(e.request.url.includes('yahoo')||e.request.url.includes('allorigins')){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
+}
+</script>
+</body>
+</html>
